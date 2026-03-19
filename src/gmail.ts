@@ -11,28 +11,31 @@ function extractHeader(headers: Array<{ name?: string | null; value?: string | n
   return headers.find(h => h.name?.toLowerCase() === name.toLowerCase())?.value ?? '';
 }
 
-export async function fetchUnreadEmails(auth: AuthClient, maxResults = 500): Promise<EmailMetadata[]> {
+export async function fetchAllUnreadIds(auth: AuthClient): Promise<string[]> {
   const gmail = getGmailClient(auth);
   const ids: string[] = [];
   let pageToken: string | undefined;
 
-  // Paginate to collect up to maxResults message IDs
-  while (ids.length < maxResults) {
+  while (true) {
     const res = await gmail.users.messages.list({
       userId: 'me',
       q: 'is:unread',
-      maxResults: Math.min(500, maxResults - ids.length),
+      maxResults: 500,
       pageToken,
     });
 
     const messages = res.data.messages ?? [];
     ids.push(...messages.map(m => m.id!));
 
-    if (!res.data.nextPageToken || ids.length >= maxResults) break;
+    if (!res.data.nextPageToken) break;
     pageToken = res.data.nextPageToken;
   }
 
-  // Batch-fetch metadata in chunks of 50 concurrent requests
+  return ids;
+}
+
+export async function fetchEmailMetadata(auth: AuthClient, ids: string[]): Promise<EmailMetadata[]> {
+  const gmail = getGmailClient(auth);
   const CHUNK_SIZE = 50;
   const emails: EmailMetadata[] = [];
 
@@ -61,7 +64,7 @@ export async function fetchUnreadEmails(auth: AuthClient, maxResults = 500): Pro
       });
     }
 
-    process.stdout.write(`\rFetching emails... ${Math.min(i + CHUNK_SIZE, ids.length)}/${ids.length}`);
+    process.stdout.write(`\rFetching metadata... ${Math.min(i + CHUNK_SIZE, ids.length)}/${ids.length}`);
   }
 
   process.stdout.write('\n');
