@@ -1,0 +1,20 @@
+{
+  "name": "email-cleaner",
+  "version": "1.0.0",
+  "description": "Spring-clean your Gmail inbox with Claude",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.51.0",
+    "dotenv": "^16.4.0",
+    "googleapis": "^144.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
