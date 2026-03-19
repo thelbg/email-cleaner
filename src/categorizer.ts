@@ -27,7 +27,7 @@ Rules:
 - Return only the emailIds that belong to each group (use the exact IDs from the input)`;
 
 export async function categorizeEmails(emails: EmailMetadata[]): Promise<CategorizationResult> {
-  const client = new Anthropic();
+  const client = new Anthropic({ timeout: 10 * 60 * 1000 }); // 10 minute timeout
 
   // Prepare compact email list for Claude
   const emailList = emails.map(e => ({
@@ -41,9 +41,9 @@ export async function categorizeEmails(emails: EmailMetadata[]): Promise<Categor
   console.log(`\nSending ${emails.length} emails to Claude for categorization...`);
 
   const message = await client.messages.create({
-    model: 'claude-opus-4-6',
+    model: 'claude-sonnet-4-6',
     max_tokens: 16000,
-    thinking: { type: 'enabled', budget_tokens: 8000 },
+    thinking: { type: 'enabled', budget_tokens: 5000 },
     system: SYSTEM_PROMPT,
     messages: [
       {
