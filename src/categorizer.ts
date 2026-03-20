@@ -6,7 +6,6 @@ const GroupSchema = z.object({
   name: z.string(),
   description: z.string(),
   emailIds: z.array(z.string()),
-  examples: z.array(z.object({ from: z.string(), subject: z.string() })).max(5),
 });
 
 const CategorizationSchema = z.object({
@@ -58,8 +57,7 @@ Return your response as JSON matching this exact schema:
     {
       "name": "string (specific sender + pattern name)",
       "description": "string (why these are safe to archive)",
-      "emailIds": ["id1", "id2", ...],
-      "examples": [{"from": "...", "subject": "..."}] // up to 5
+      "emailIds": ["id1", "id2", ...]
     }
   ]
 }
@@ -101,19 +99,24 @@ ${JSON.stringify(emailList, null, 2)}`,
   const parsed = CategorizationSchema.parse(raw);
 
   // Validate and deduplicate IDs against actual fetched emails
-  const validIds = new Set(emails.map(e => e.id));
+  const emailById = new Map(emails.map(e => [e.id, e]));
   const seenIds = new Set<string>();
   const validatedGroups: EmailGroup[] = [];
 
   for (const group of parsed.groups) {
     const filteredIds = group.emailIds.filter(id => {
-      if (!validIds.has(id) || seenIds.has(id)) return false;
+      if (!emailById.has(id) || seenIds.has(id)) return false;
       seenIds.add(id);
       return true;
     });
 
     if (filteredIds.length > 0) {
-      validatedGroups.push({ ...group, emailIds: filteredIds });
+      // Build examples from our own data — never from Claude's output
+      const examples = filteredIds.slice(0, 5).map(id => {
+        const e = emailById.get(id)!;
+        return { from: e.from, subject: e.subject };
+      });
+      validatedGroups.push({ ...group, emailIds: filteredIds, examples });
     }
   }
 
