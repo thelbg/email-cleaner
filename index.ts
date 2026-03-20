@@ -4,7 +4,7 @@ import { fetchAllUnreadIds, fetchEmailMetadata, archiveEmails, getUnreadCount } 
 import { categorizeEmails } from './src/categorizer.js';
 import { presentGroup } from './src/interactive.js';
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 100;
 
 async function main() {
   // Validate env
