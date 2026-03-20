@@ -70,6 +70,9 @@ ${JSON.stringify(emailList, null, 2)}`,
     ],
   });
 
+  // Log token usage to understand output size
+  console.log(`  Token usage — input: ${message.usage.input_tokens}, output: ${message.usage.output_tokens}, stop_reason: ${message.stop_reason}`);
+
   // Extract JSON from response
   const textBlock = message.content.find(b => b.type === 'text');
   if (!textBlock || textBlock.type !== 'text') {
@@ -85,7 +88,14 @@ ${JSON.stringify(emailList, null, 2)}`,
   try {
     raw = JSON.parse(jsonText);
   } catch (err) {
-    console.error('\nClaude returned invalid JSON. Raw response:\n', jsonText.slice(0, 500));
+    // Write full response to a debug file so we can inspect it without truncation
+    const debugFile = `/tmp/claude-debug-${Date.now()}.txt`;
+    const fs = await import('fs');
+    fs.writeFileSync(debugFile, jsonText);
+    console.error(`\nClaude returned invalid JSON.`);
+    console.error(`Full response written to: ${debugFile}`);
+    console.error(`Response length: ${jsonText.length} chars`);
+    console.error(`Error position context: ...${jsonText.slice(Math.max(0, (err as SyntaxError).message.match(/position (\d+)/)?.[1] ? parseInt((err as SyntaxError).message.match(/position (\d+)/)![1]) - 40 : 0), ((err as SyntaxError).message.match(/position (\d+)/)?.[1] ? parseInt((err as SyntaxError).message.match(/position (\d+)/)![1]) + 40 : 80))}...`);
     throw err;
   }
   const parsed = CategorizationSchema.parse(raw);
