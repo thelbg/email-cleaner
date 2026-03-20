@@ -29,13 +29,15 @@ Rules:
 export async function categorizeEmails(emails: EmailMetadata[]): Promise<CategorizationResult> {
   const client = new Anthropic({ timeout: 10 * 60 * 1000 }); // 10 minute timeout
 
-  // Prepare compact email list for Claude
+  // Sanitize strings to prevent special characters from breaking Claude's JSON output
+  const sanitize = (s: string) => s.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\\/g, '/').trim();
+
   const emailList = emails.map(e => ({
     id: e.id,
-    from: e.from,
-    subject: e.subject,
+    from: sanitize(e.from),
+    subject: sanitize(e.subject),
     date: e.date,
-    snippet: e.snippet.slice(0, 100),
+    snippet: sanitize(e.snippet.slice(0, 100)),
   }));
 
   console.log(`\nSending ${emails.length} emails to Claude for categorization...`);
@@ -79,7 +81,13 @@ ${JSON.stringify(emailList, null, 2)}`,
   const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) jsonText = fenceMatch[1].trim();
 
-  const raw = JSON.parse(jsonText);
+  let raw: unknown;
+  try {
+    raw = JSON.parse(jsonText);
+  } catch (err) {
+    console.error('\nClaude returned invalid JSON. Raw response:\n', jsonText.slice(0, 500));
+    throw err;
+  }
   const parsed = CategorizationSchema.parse(raw);
 
   // Validate and deduplicate IDs against actual fetched emails
