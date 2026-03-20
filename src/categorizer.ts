@@ -30,7 +30,7 @@ export async function categorizeEmails(emails: EmailMetadata[]): Promise<Categor
   const client = new Anthropic({ timeout: 10 * 60 * 1000 }); // 10 minute timeout
 
   // Sanitize strings to prevent special characters from breaking Claude's JSON output
-  const sanitize = (s: string) => s.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\\/g, '/').trim();
+  const sanitize = (s: string) => s.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\\/g, '/').replace(/"/g, "'").trim();
 
   const emailList = emails.map(e => ({
     id: e.id,
