@@ -44,8 +44,7 @@ export async function categorizeEmails(emails: EmailMetadata[]): Promise<Categor
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 16000,
-    thinking: { type: 'enabled', budget_tokens: 5000 },
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [
       {
